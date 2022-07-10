@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.20)
+project(project_final C)
+set(CMAKE_C_STANDARD 99)
+add_subdirectory(lib)
+add_executable(project_final main.c)
+target_link_libraries(project_final PUBLIC lib)
