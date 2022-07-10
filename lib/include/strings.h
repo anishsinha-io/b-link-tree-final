@@ -11,7 +11,7 @@ typedef enum string_type {
     str_unsigned_long, str_long, str_signed_long,
     str_unsigned_long_long, str_long_long, str_signed_long_long,
     str_double, str_long_double,
-    str_string
+    str_str, str_string
 } string_type;
 
 typedef struct string {

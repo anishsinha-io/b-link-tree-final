@@ -26,7 +26,7 @@ int str_free(string *str) {
 }
 
 
-static string *append_string(string *s, char *str) {
+static string *append_str(string *s, char *str) {
     if (s->capacity < strlen(s->buf) + strlen(str))
         string_resize(s, (int) ((s->capacity + (double) strlen(str) * 10)));
     memcpy((void *) (s->buf + strlen(s->buf)), str, strlen(str));
@@ -98,6 +98,14 @@ static string *append_double(string *s, const double *num) {
     return s;
 }
 
+static string *append_string(string *s, const string *str) {
+    if (s->capacity < strlen(s->buf) + str->len)
+        string_resize(s, (int) ((s->capacity + str->len * 2)));
+    memcpy((void *) (s->buf + strlen(s->buf)), str->buf, str->len);
+    s->len = (int) strlen(s->buf);
+    return s;
+}
+
 string *append(string *s, void *str, string_type type) {
     if (!s || !str) return s;
     switch (type) {
@@ -120,8 +128,10 @@ string *append(string *s, void *str, string_type type) {
             return append_unsigned_long_long(s, (const unsigned long long *) str);
         case str_long_double:
             return append_long_double(s, (const long double *) str);
+        case str_str:
+            return append_str(s, (char *) str);
         case str_string:
-            return append_string(s, (char *) str);
+            return append_string(s, (string *) str);
         default:
             return str;
     }

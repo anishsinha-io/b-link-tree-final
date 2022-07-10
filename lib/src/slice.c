@@ -195,5 +195,7 @@ int slice_find_index(slice *s, const void *key, cmpfunc override) {
 }
 
 const char *slice_to_string(slice *s, to_string override) {
-    
+    to_string elem_to_string = override ? override : s->elem_to_string;
+    if (!elem_to_string) return "";
+
 }

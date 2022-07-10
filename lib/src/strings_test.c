@@ -16,11 +16,11 @@ void test_string_create() {
     str_free(s2);
 }
 
-void test_string_append_string() {
+void test_string_append_str() {
     string *s = str("test ");
     assert(s->capacity == 10);
     assert(s->len == 5);
-    append(s, "string", str_string);
+    append(s, "string", str_str);
     assert(strcmp("test string", s->buf) == 0);
     assert(strlen(s->buf) == 11);
     assert(s->capacity == (int) (10 + strlen("string") * 10));
@@ -123,9 +123,20 @@ void test_string_append_double() {
     str_free(s);
 }
 
+void test_string_append_string() {
+    string *s = str("test ");
+    assert(s->capacity == 10);
+    assert(s->len == 5);
+    string *s2 = str("string");
+    append(s, s2, str_string);
+    assert(s->capacity == 22);
+    assert(s->len == 11);
+    str_free(s);
+}
+
 void test_strings() {
     test_string_create();
-    test_string_append_string();
+    test_string_append_str();
     test_string_append_long_double();
     test_string_append_unsigned_long_long();
     test_string_append_long_long();
@@ -134,4 +145,5 @@ void test_strings() {
     test_string_append_unsigned_int();
     test_string_append_int();
     test_string_append_double();
+    test_string_append_string();
 }

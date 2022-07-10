@@ -37,6 +37,8 @@ void *slice_delete_back(slice *s);
 void *slice_delete_index(slice *s, int index);
 void *slice_get_index(slice *s, int index);
 
-struct slice *subslice(struct slice *s, int start, int end);
+struct slice *subslice(slice *s, int start, int end);
+
+const char *slice_to_string(slice *s, to_string override);
 
 #endif
