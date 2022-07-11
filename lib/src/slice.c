@@ -162,7 +162,7 @@ int slice_from_primitive_array(slice *s, void *keys, int num_keys, size_t key_si
     return 0;
 }
 
-struct slice *subslice(struct slice *s, int start, int end) {
+slice *subslice(slice *s, int start, int end) {
     if (!s || start > s->length || end < 0 || start < 0 || end <= start) return NULL;
     slice *ss = malloc(sizeof(slice));
     slice_default(ss);
@@ -221,7 +221,7 @@ static int insertion_sort(slice *s, cmpfunc compare) {
     return 0;
 }
 
-static int merge(struct slice *s, struct slice *l, struct slice *r, cmpfunc compare) {
+static int merge(slice *s, slice *l, slice *r, cmpfunc compare) {
     int i = 0, j = 0, k = 0;
     while (i < l->length && j < r->length) {
         if (compare(r->keys[j], l->keys[i]) >= 0) {
@@ -244,7 +244,7 @@ static int merge(struct slice *s, struct slice *l, struct slice *r, cmpfunc comp
     return 0;
 }
 
-int slice_sort(struct slice *s, cmpfunc override) {
+int slice_sort(slice *s, cmpfunc override) {
     cmpfunc compare = override ? override : s->compare;
     if (!compare) return EINVAL;
     if (s->length < SORT_RECURSION_THRESHOLD) return insertion_sort(s, compare);
@@ -257,13 +257,13 @@ int slice_sort(struct slice *s, cmpfunc override) {
     return 0;
 }
 
-int slice_to_ptr_array(struct slice *s, void *array, int array_size) {
+int slice_to_ptr_array(slice *s, void *array, int array_size) {
     if (!s || !array || array_size < 1) return EINVAL;
     for (int i = 0; i < array_size; i++) memcpy(array + i * sizeof(void *), &s->keys[i], sizeof(void *));
     return 0;
 }
 
-int slice_to_primitive_array(struct slice *s, void *array, int array_size, size_t key_size) {
+int slice_to_primitive_array(slice *s, void *array, int array_size, size_t key_size) {
     if (!s || !array || array_size < 1 || key_size < 1) return EINVAL;
     for (int i = 0; i < array_size; i++) memcpy(array + i * key_size, s->keys[i], key_size);
     return 0;
