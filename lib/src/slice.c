@@ -248,9 +248,9 @@ int slice_sort(struct slice *s, cmpfunc override) {
     cmpfunc compare = override ? override : s->compare;
     if (!compare) return EINVAL;
     if (s->length < SORT_RECURSION_THRESHOLD) return insertion_sort(s, compare);
-    int          mid = s->length / 2;
-    struct slice *l  = subslice(s, 0, mid);
-    struct slice *r  = subslice(s, mid, s->length);
+    int   mid = s->length / 2;
+    slice *l  = subslice(s, 0, mid);
+    slice *r  = subslice(s, mid, s->length);
     slice_sort(l, compare);
     slice_sort(r, compare);
     merge(s, l, r, compare);
