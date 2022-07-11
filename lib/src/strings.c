@@ -29,7 +29,7 @@ int str_free(string *str) {
 static string *append_str(string *s, char *str) {
     if (s->capacity < strlen(s->buf) + strlen(str))
         string_resize(s, (int) ((s->capacity + (double) strlen(str) * 10)));
-    memcpy((void *) (s->buf + strlen(s->buf)), str, strlen(str));
+    sprintf((void *) (s->buf + strlen(s->buf)), "%s", str);
     s->len = (int) strlen(s->buf);
     return s;
 }
@@ -101,7 +101,7 @@ static string *append_double(string *s, const double *num) {
 static string *append_string(string *s, const string *str) {
     if (s->capacity < strlen(s->buf) + str->len)
         string_resize(s, (int) ((s->capacity + str->len * 2)));
-    memcpy((void *) (s->buf + strlen(s->buf)), str->buf, str->len);
+    sprintf((void *) (s->buf + strlen(s->buf)), "%s", str->buf);
     s->len = (int) strlen(s->buf);
     return s;
 }

@@ -21,10 +21,12 @@
 #include <errno.h>
 #include <stdbool.h>
 
+#include "strings.h"
+
 typedef int        (*cmpfunc)(const void *, const void *);
 typedef int        (*hashfunc)(const void *);
 typedef bool       (*validator)(const void *);
-typedef const char *(*to_string)(const void *);
+typedef string     *(*to_string)(const void *);
 
 #define err_abort(code, text) do { \
     fprintf(stderr, "%s at \"%s\":%d: %s\n", \

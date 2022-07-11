@@ -18,6 +18,20 @@ int second_compare_test_slice_struct(const void *first, const void *second) {
     return res;
 }
 
+string *first_test_slice_struct_to_string(const void *el) {
+    const test_slice_struct *cast = el;
+    string                  *s    = str("");
+    append(s, (void *) &cast->test_id, str_int);
+    return s;
+}
+
+string *second_test_slice_struct_to_string(const void *el) {
+    const test_slice_struct *cast = el;
+    string                  *s    = str("");
+    append(s, (void *) &cast->test_name, str_str);
+    return s;
+}
+
 static test_slice_struct *test_tss(int id) {
     test_slice_struct *tss = malloc(sizeof(test_slice_struct));
     tss->test_id = id;
@@ -339,6 +353,180 @@ void test_slice_find_index() {
     assert(seventh == 5);
 }
 
+void test_slice_to_string() {
+    test_slice_struct *t1      = test_tss(1);
+    test_slice_struct *t2      = test_tss(2);
+    test_slice_struct *t3      = test_tss(3);
+    test_slice_struct *t4      = test_tss(4);
+    test_slice_struct *t5      = test_tss(5);
+    test_slice_struct *ptrs[5] = {t1, t2, t3, t4, t5};
+    slice             *s       = malloc(sizeof(slice));
+    slice_default(s);
+    slice_from_ptr_array(s, ptrs, 5);
+    string *slice_string = slice_to_string(s, NULL);
+    assert(slice_string == NULL);
+    s->elem_to_string = first_test_slice_struct_to_string;
+    slice_string = slice_to_string(s, NULL);
+    assert(slice_string != NULL);
+    // println(slice_string);
+    slice_string = slice_to_string(s, second_test_slice_struct_to_string);
+    // println(slice_string);
+}
+
+typedef struct bloodborne_character {
+    int  id;
+    char name[50];
+} b_c;
+
+b_c *bc(int id, char *name) {
+    b_c *b = malloc(sizeof(b_c));
+    b->id = id;
+    strncpy(b->name, name, sizeof(b->name));
+    return b;
+}
+
+string *first_test_print_bc(const void *el) {
+    const b_c *cast = el;
+    string    *s    = str("");
+    append(s, (void *) &cast->id, str_int);
+    return s;
+}
+
+string *second_test_print_bc(const void *el) {
+    const b_c *cast = el;
+    string    *s    = str("");
+    append(s, (void *) &cast->name, str_str);
+    return s;
+}
+
+int first_test_compare_bc(const void *first, const void *second) {
+    const b_c *c1 = first;
+    const b_c *c2 = second;
+    return c1->id - c2->id;
+}
+
+int second_test_compare_bc(const void *first, const void *second) {
+    const b_c *c1 = first;
+    const b_c *c2 = second;
+    return strncmp(c1->name, c2->name, sizeof(c1->name));
+}
+
+void test_slice_sort() {
+    slice *s = malloc(sizeof(slice));
+    slice_default(s);
+    b_c *gascoigne          = bc(1, "father gascoigne");
+    b_c *amelia             = bc(2, "vicar amelia");
+    b_c *shadows            = bc(3, "shadows of yharnam");
+    b_c *cleric             = bc(4, "cleric beast");
+    b_c *paarl              = bc(5, "darkbeast paarl");
+    b_c *rom                = bc(6, "rom, the vacuous spider");
+    b_c *one                = bc(7, "the one reborn");
+    b_c *amygdala           = bc(8, "amygdala");
+    b_c *queen              = bc(9, "yharnam, pthumerian queen");
+    b_c *ebrietas           = bc(10, "ebrietas, daughter of the cosmos");
+    b_c *emissary           = bc(11, "celestial emissary");
+    b_c *micolash           = bc(12, "micolash, host of the nightmare");
+    b_c *nurse              = bc(13, "mergo's wet nurse");
+    b_c *watchers           = bc(14, "merciless watchers");
+    b_c *giant              = bc(15, "undead giant");
+    b_c *descendant         = bc(16, "pthumerian descendant");
+    b_c *beast              = bc(17, "abhorrent beast");
+    b_c *brainsucker        = bc(18, "brainsucker");
+    b_c *loran              = bc(19, "loran darkbeast");
+    b_c *bsb                = bc(20, "blood-starved beast");
+    b_c *gehrman            = bc(21, "gehrman, the first hunter");
+    b_c *witches            = bc(22, "witches of hemwick");
+    b_c *logarius           = bc(23, "martyr logarius");
+    b_c *bloodletting_beast = bc(24, "bloodletting beast");
+    b_c *madman             = bc(25, "forgotten madman");
+    b_c *keeper             = bc(26, "keeper of the old lords");
+    b_c *maria              = bc(27, "lady maria of the astral clocktower");
+    b_c *laurence           = bc(28, "laurence, the first vicar");
+    b_c *failures           = bc(29, "living failures");
+    b_c *silver             = bc(30, "loran silverbeast");
+    b_c *ludwig             = bc(31, "ludwig, the holy blade");
+    b_c *boar               = bc(32, "maneater boar");
+    b_c *moon               = bc(33, "moon presence");
+    b_c *orphan             = bc(34, "orphan of kos");
+    b_c *elder              = bc(35, "pthumerian elder");
+    b_c *watchdog           = bc(36, "watchdog of the old lords");
+    b_c *bloody_crow        = bc(37, "the bloody crow of cainhurst");
+    b_c *crow               = bc(38, "eileen the crow");
+    b_c *olek               = bc(39, "tomb prospector olek");
+    b_c *arianna            = bc(40, "arianna");
+    b_c *adella             = bc(41, "adella");
+    b_c *patches            = bc(42, "patches");
+    b_c *alfred             = bc(43, "alfred");
+    b_c *annalise           = bc(44, "annalise, queen of the vilebloods");
+    b_c *brador             = bc(45, "brador, church assassin");
+    b_c *simon              = bc(46, "simon the harrowed");
+
+    b_c *characters[] = {brador, ludwig, failures, arianna, bsb, loran, amelia, keeper, watchdog, gascoigne,
+                         bloody_crow, simon, one, micolash, bloodletting_beast, giant, descendant, nurse, queen,
+                         shadows, beast, gehrman, brainsucker, moon, boar, olek, cleric, rom, annalise, paarl, logarius,
+                         witches, alfred, amygdala, crow, patches, elder, orphan, watchers, emissary, adella, silver,
+                         maria, madman, laurence, ebrietas};
+    int first         = slice_from_ptr_array(s, characters, 46);
+    assert(first == 0);
+    assert(s->length == 46);
+    assert(s->capacity > s->length);
+    int second = slice_sort(s, NULL);
+    assert(second == EINVAL);
+    s->elem_to_string = second_test_print_bc;
+    s->compare        = first_test_compare_bc;
+    int third = slice_sort(s, NULL);
+    assert(third == 0);
+    // println(slice_to_string(s, NULL));
+    // println(slice_to_string(s, first_test_print_bc));
+    int fourth = slice_sort(s, second_test_compare_bc);
+    assert(fourth == 0);
+    // println(slice_to_string(s, NULL));
+    // println(slice_to_string(s, first_test_print_bc));
+    slice_free(s);
+}
+
+void test_slice_to_ptr_array() {
+    slice *s = malloc(sizeof(slice));
+    slice_default(s);
+    b_c *gascoigne    = bc(1, "father gascoigne");
+    b_c *amelia       = bc(2, "vicar amelia");
+    b_c *shadows      = bc(3, "shadows of yharnam");
+    b_c *cleric       = bc(4, "cleric beast");
+    b_c *paarl        = bc(5, "darkbeast paarl");
+    b_c *rom          = bc(6, "rom, the vacuous spider");
+    b_c *characters[] = {gascoigne, amelia, shadows, cleric, paarl, rom};
+    slice_from_ptr_array(s, characters, 6);
+    s->elem_to_string = second_test_print_bc;
+    b_c *array[s->length];
+    int first         = slice_to_ptr_array(s, array, s->length);
+    assert(first == 0);
+    // for (int i = 0; i < s->length; i++) println(second_test_print_bc(array[i]));
+    int second = slice_to_ptr_array(NULL, NULL, s->length);
+    assert(second == EINVAL);
+    int third = slice_to_ptr_array(s, array, 0);
+    assert(third == EINVAL);
+    slice_free(s);
+}
+
+void test_slice_to_primitive_array() {
+    slice *s = malloc(sizeof(slice));
+    slice_default(s);
+    b_c characters[] = {{.id=1, .name="father gascoigne"}, {.id=2, .name= "vicar amelia"},
+                        {.id=3, .name = "shadows of yharnam"}};
+    slice_from_primitive_array(s, characters, 3, sizeof(b_c));
+    s->elem_to_string = second_test_print_bc;
+    // println(slice_to_string(s, NULL));
+    b_c array[s->length];
+    int first         = slice_to_primitive_array(s, array, s->length, sizeof(b_c));
+    assert(first == 0);
+    // for (int i = 0; i < s->length; i++) println(second_test_print_bc(&array[i]));
+    int second = slice_to_primitive_array(NULL, NULL, s->length, sizeof(b_c));
+    assert(second == EINVAL);
+    int third = slice_to_primitive_array(s, array, 0, 0);
+    assert(third == EINVAL);
+    slice_free(s);
+}
+
 void test_slice() {
     test_slice_init();
     test_slice_resize();
@@ -355,4 +543,8 @@ void test_slice() {
     test_subslice();
     test_slice_join();
     test_slice_find_index();
+    test_slice_to_string();
+    test_slice_sort();
+    test_slice_to_ptr_array();
+    test_slice_to_primitive_array();
 }

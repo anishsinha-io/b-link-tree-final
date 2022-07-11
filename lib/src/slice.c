@@ -194,8 +194,77 @@ int slice_find_index(slice *s, const void *key, cmpfunc override) {
     return end + 1;
 }
 
-const char *slice_to_string(slice *s, to_string override) {
+string *slice_to_string(slice *s, to_string override) {
     to_string elem_to_string = override ? override : s->elem_to_string;
-    if (!elem_to_string) return "";
+    if (!elem_to_string) return NULL;
+    string   *slice_string = str("slice [ ");
+    for (int i             = 0; i < s->length; i++) {
+        string *el = elem_to_string(s->keys[i]);
+        append(slice_string, el, str_string);
+        if (i != s->length - 1) append(slice_string, ", ", str_str);
+    }
+    append(slice_string, " ]\n", str_str);
+    return slice_string;
+}
 
+static int insertion_sort(slice *s, cmpfunc compare) {
+    int      j;
+    for (int i = 0; i < s->length; i++) {
+        void *key = s->keys[i];
+        j              = i - 1;
+        while (j >= 0 && compare(key, s->keys[j]) <= 0) {
+            s->keys[j + 1] = s->keys[j];
+            j--;
+        }
+        s->keys[j + 1] = key;
+    }
+    return 0;
+}
+
+static int merge(struct slice *s, struct slice *l, struct slice *r, cmpfunc compare) {
+    int i = 0, j = 0, k = 0;
+    while (i < l->length && j < r->length) {
+        if (compare(r->keys[j], l->keys[i]) >= 0) {
+            slice_set_index(s, l->keys[i], k);
+            i++;
+        } else {
+            slice_set_index(s, r->keys[j], k);
+            j++;
+        }
+        k++;
+    }
+    while (i < l->length) {
+        slice_set_index(s, l->keys[i], k);
+        i++, k++;
+    }
+    while (j < r->length) {
+        slice_set_index(s, r->keys[j], k);
+        j++, k++;
+    }
+    return 0;
+}
+
+int slice_sort(struct slice *s, cmpfunc override) {
+    cmpfunc compare = override ? override : s->compare;
+    if (!compare) return EINVAL;
+    if (s->length < SORT_RECURSION_THRESHOLD) return insertion_sort(s, compare);
+    int          mid = s->length / 2;
+    struct slice *l  = subslice(s, 0, mid);
+    struct slice *r  = subslice(s, mid, s->length);
+    slice_sort(l, compare);
+    slice_sort(r, compare);
+    merge(s, l, r, compare);
+    return 0;
+}
+
+int slice_to_ptr_array(struct slice *s, void *array, int array_size) {
+    if (!s || !array || array_size < 1) return EINVAL;
+    for (int i = 0; i < array_size; i++) memcpy(array + i * sizeof(void *), &s->keys[i], sizeof(void *));
+    return 0;
+}
+
+int slice_to_primitive_array(struct slice *s, void *array, int array_size, size_t key_size) {
+    if (!s || !array || array_size < 1 || key_size < 1) return EINVAL;
+    for (int i = 0; i < array_size; i++) memcpy(array + i * key_size, s->keys[i], key_size);
+    return 0;
 }
