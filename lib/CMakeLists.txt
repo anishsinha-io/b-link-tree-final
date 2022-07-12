@@ -1,2 +1,2 @@
-add_library(lib include/common.h src/slice.c include/slice.h src/slice_test.c include/slice_test.h src/strings.c include/strings.h src/strings_test.c include/strings_test.h src/stack.c include/stack.h src/stack_test.c include/stack_test.h)
+add_library(lib include/common.h src/slice.c include/slice.h src/slice_test.c include/slice_test.h src/strings.c include/strings.h src/strings_test.c include/strings_test.h src/stack.c include/stack.h src/stack_test.c include/stack_test.h src/ioutil.c src/ioutil_test.c include/ioutil.h include/ioutil_test.h)
 target_include_directories(lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
