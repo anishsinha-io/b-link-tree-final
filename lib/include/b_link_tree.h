@@ -22,7 +22,7 @@ typedef struct node {
 } node;
 
 typedef struct header {
-    int    page_count, root_loc, order;
+    int    node_count, root_loc, order;
     size_t node_size;
 } header;
 
@@ -31,6 +31,8 @@ int format(int order, size_t node_size);
 int destroy_index();
 int read_header(header *h);
 int read_node(node *n, int loc);
+int write_node(int loc, node *n);
+int scannode(node *n);
 
 off_t get_offset(int loc);
 node *create_node();
