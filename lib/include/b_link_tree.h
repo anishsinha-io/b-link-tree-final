@@ -42,7 +42,7 @@ off_t get_offset(int loc);
 
 node *create_node(int loc);
 
-split *split_node(node *n);
+split *split_node(int v, int w, node *n);
 
 #endif
 

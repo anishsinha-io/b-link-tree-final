@@ -89,25 +89,25 @@ void test_scannode() {
     destroy_index();
 }
 
-void test_split_node() {
-    destroy_index();
-    format(TEST_MIN_ORDER, sizeof(node));
-    node root;
-    read_node(&root, 0);
-    root.num_keys = 4;
-    root.keys[0]     = 1;
-    root.keys[1]     = 2;
-    root.keys[2]     = 3;
-    root.keys[3]     = 4;
-    root.children[0] = 10;
-    root.children[1] = 20;
-    root.children[2] = 30;
-    root.children[3] = 40;
-    write_node(0, &root);
-    read_node(&root, 0);
-    split_node(&root);
-    destroy_index();
-}
+// void test_split_node() {
+//     destroy_index();
+//     format(TEST_MIN_ORDER, sizeof(node));
+//     node root;
+//     read_node(&root, 0);
+//     root.num_keys = 4;
+//     root.keys[0]     = 1;
+//     root.keys[1]     = 2;
+//     root.keys[2]     = 3;
+//     root.keys[3]     = 4;
+//     root.children[0] = 10;
+//     root.children[1] = 20;
+//     root.children[2] = 30;
+//     root.children[3] = 40;
+//     write_node(0, &root);
+//     read_node(&root, 0);
+//     split_node(&root);
+//     destroy_index();
+// }
 
 void test_b_link_tree() {
     test_create_node();
@@ -116,5 +116,5 @@ void test_b_link_tree() {
     test_read_node();
     test_write_node();
     test_scannode();
-    test_split_node();
+    // test_split_node();
 }
