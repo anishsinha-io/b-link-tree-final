@@ -17,7 +17,7 @@
 
 typedef struct node {
     bool leaf;
-    int  order, num_keys, high_key, next_loc;
+    int  order, num_keys, high_key, link_ptr, loc;
     int  keys[TEST_MIN_ORDER * 2], children[TEST_MIN_ORDER * 2 + 1];
 } node;
 
@@ -26,15 +26,23 @@ typedef struct header {
     size_t node_size;
 } header;
 
+typedef struct split {
+    node *A, *B, *new_root;
+} split;
+
 int destroy_node(node *n);
 int format(int order, size_t node_size);
 int destroy_index();
 int read_header(header *h);
 int read_node(node *n, int loc);
 int write_node(int loc, node *n);
-int scannode(node *n);
+int scannode(int key, node *n);
 
 off_t get_offset(int loc);
-node *create_node();
+
+node *create_node(int loc);
+
+split *split_node(node *n);
 
 #endif
+

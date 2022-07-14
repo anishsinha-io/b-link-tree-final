@@ -1,3 +1,24 @@
+/*
+** July 10, 2022
+**
+** The author disclaims copyright to this source code.  In place of
+** a legal notice, here is a blessing:
+**
+**    May you do good and not evil.
+**    May you find forgiveness for yourself and forgive others.
+**    May you share freely, never taking more than you give.
+**
+***********************************************************************************************************************
+**
+** This file is part of the `slice` module. This part of the module contains implementations of functions used for
+** creating, manipulating, and utilizing dynamic slice objects. Slice objects are meant to be a more convenient way to
+** work with C arrays, which are, in general, limited in their use. Slices implemented here are fully featured,
+** java.lang.ArrayList or std::vector type structures, fully capable of dynamically resizing themselves, among other
+** important operations. They may be searched through, sorted efficiently, and inserted into at any point with simple
+** function calls.
+**
+*/
+
 #include "slice.h"
 
 /*
@@ -15,6 +36,10 @@ int slice_init(slice *s, cmpfunc compare, to_string elem_to_string, validator va
     return 0;
 }
 
+/*
+** create a default slice object with uninitialized function pointers for comparison, validation, and to_string
+** functions
+*/
 int slice_default(slice *s) {
     if (!s) return EINVAL;
     return slice_init(s, NULL, NULL, NULL);
@@ -107,6 +132,9 @@ void *slice_delete_back(slice *s) {
     return key;
 }
 
+/*
+** insert a key into a slice at a specific index
+*/
 int slice_insert_index(slice *s, void *key, int index) {
     if (!s || !key || index > s->length || (s->validator && !s->validator(key))) return EINVAL;
     if (index == s->length) return slice_append(s, key);
@@ -118,6 +146,9 @@ int slice_insert_index(slice *s, void *key, int index) {
     return 0;
 }
 
+/*
+** delete a key from a specific index within the slice
+*/
 void *slice_delete_index(slice *s, int index) {
     if (!s || index >= s->length || s->length == 0) return NULL;
     void *key = s->keys[index];
@@ -128,6 +159,9 @@ void *slice_delete_index(slice *s, int index) {
     return key;
 }
 
+/*
+** set the value of a key at a certain index within the slice
+*/
 int slice_set_index(slice *s, void *key, int index) {
     if (!s || !key || (s->validator && !s->validator(key)) || index >= s->length) return EINVAL;
     slice_autoresize(s);
@@ -135,11 +169,17 @@ int slice_set_index(slice *s, void *key, int index) {
     return 0;
 }
 
+/*
+** retrieve a key from a certain index within the slice
+*/
 void *slice_get_index(slice *s, int index) {
     if (index >= s->length) return NULL;
     return s->keys[index];
 }
 
+/*
+** generate a slice object from an array of pointers
+*/
 int slice_from_ptr_array(slice *s, void *keys, int num_keys) {
     if (!s || !keys || num_keys < 1) return EINVAL;
     slice_default(s);
@@ -149,6 +189,9 @@ int slice_from_ptr_array(slice *s, void *keys, int num_keys) {
     return 0;
 }
 
+/*
+** generate a slice object from an array of primitives
+*/
 int slice_from_primitive_array(slice *s, void *keys, int num_keys, size_t key_size) {
     if (!s || !keys || num_keys < 1) return EINVAL;
     slice_default(s);
@@ -162,16 +205,25 @@ int slice_from_primitive_array(slice *s, void *keys, int num_keys, size_t key_si
     return 0;
 }
 
+/*
+** generate a subslice on a half-open interval from within another slice
+*/
 slice *subslice(slice *s, int start, int end) {
     if (!s || start > s->length || end < 0 || start < 0 || end <= start) return NULL;
     slice *ss = malloc(sizeof(slice));
     slice_default(ss);
     slice_resize(ss, end - start);
     memcpy(ss->keys, &(s->keys[start]), sizeof(void *) * (end - start));
-    ss->length = end - start;
+    ss->length         = end - start;
+    ss->compare        = s->compare;
+    ss->elem_to_string = s->elem_to_string;
+    ss->validator      = s->validator;
     return ss;
 }
 
+/*
+** join together two slice objects. the second is appended to the first
+*/
 int slice_join(slice *s1, slice *s2) {
     if (!s1 || !s2) return EINVAL;
     if (s1->length + s2->length >= s1->capacity) slice_resize(s1, s1->length + s2->length);
@@ -180,6 +232,10 @@ int slice_join(slice *s1, slice *s2) {
     return 0;
 }
 
+/*
+** find the index at which the key passed in should be inserted. note: the slice must be sorted for this function
+** to have well-defined behavior
+*/
 int slice_find_index(slice *s, const void *key, cmpfunc override) {
     if (!s || !key) return -1;
     cmpfunc compare = override ? override : s->compare;
@@ -194,6 +250,9 @@ int slice_find_index(slice *s, const void *key, cmpfunc override) {
     return end + 1;
 }
 
+/*
+** join together two slice objects. the second is appended to the first
+*/
 string *slice_to_string(slice *s, to_string override) {
     to_string elem_to_string = override ? override : s->elem_to_string;
     if (!elem_to_string) return NULL;
@@ -207,6 +266,9 @@ string *slice_to_string(slice *s, to_string override) {
     return slice_string;
 }
 
+/*
+** simple polymorphic insertion sort implementation. this is used to optimize the implementation of mergesort.
+*/
 static int insertion_sort(slice *s, cmpfunc compare) {
     int      j;
     for (int i = 0; i < s->length; i++) {
@@ -221,6 +283,9 @@ static int insertion_sort(slice *s, cmpfunc compare) {
     return 0;
 }
 
+/*
+** auxiliary operation used in the mergesort (slice_sort) procedure below
+*/
 static int merge(slice *s, slice *l, slice *r, cmpfunc compare) {
     int i = 0, j = 0, k = 0;
     while (i < l->length && j < r->length) {
@@ -244,6 +309,11 @@ static int merge(slice *s, slice *l, slice *r, cmpfunc compare) {
     return 0;
 }
 
+/*
+** slightly optimized version of mergesort which uses insertion sort when the length of the slice is smaller than
+** a set constant threshold (44 in this case). this is because insertion sort is more efficient of smaller sized
+** arrays
+*/
 int slice_sort(slice *s, cmpfunc override) {
     cmpfunc compare = override ? override : s->compare;
     if (!compare) return EINVAL;
@@ -257,14 +327,37 @@ int slice_sort(slice *s, cmpfunc override) {
     return 0;
 }
 
+/*
+** convert a slice into a basic pointer array
+*/
 int slice_to_ptr_array(slice *s, void *array, int array_size) {
     if (!s || !array || array_size < 1) return EINVAL;
     for (int i = 0; i < array_size; i++) memcpy(array + i * sizeof(void *), &s->keys[i], sizeof(void *));
     return 0;
 }
 
+/*
+** convert a slice into an array of primitives
+*/
 int slice_to_primitive_array(slice *s, void *array, int array_size, size_t key_size) {
     if (!s || !array || array_size < 1 || key_size < 1) return EINVAL;
     for (int i = 0; i < array_size; i++) memcpy(array + i * key_size, s->keys[i], key_size);
     return 0;
+}
+
+/*
+** search a slice for a desired value. can pass in a search function to override the default
+*/
+int slice_search(slice *s, void *key, int start, int end, cmpfunc override) {
+    if (!s || !key || start > end || start < 0 || end < 0 || s->length == 0) return -1;
+    cmpfunc compare = override ? override : s->compare;
+    if (!compare) return -1;
+    int mid = (start + end) / 2;
+    if (start == mid) {
+        if (compare(s->keys[mid], key) == 0) return start;
+        return -1;
+    }
+    if (compare(s->keys[mid], key) == 0) return mid;
+    else if (compare(s->keys[mid], key) > 0) return slice_search(s, key, 0, mid, override);
+    return slice_search(s, key, mid, end, override);
 }

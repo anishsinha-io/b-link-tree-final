@@ -511,7 +511,8 @@ void test_slice_to_ptr_array() {
 void test_slice_to_primitive_array() {
     slice *s = malloc(sizeof(slice));
     slice_default(s);
-    b_c characters[] = {{.id=1, .name="father gascoigne"}, {.id=2, .name= "vicar amelia"},
+    b_c characters[] = {{.id=1, .name="father gascoigne"},
+                        {.id=2, .name= "vicar amelia"},
                         {.id=3, .name = "shadows of yharnam"}};
     slice_from_primitive_array(s, characters, 3, sizeof(b_c));
     s->elem_to_string = second_test_print_bc;
@@ -524,6 +525,30 @@ void test_slice_to_primitive_array() {
     assert(second == EINVAL);
     int third = slice_to_primitive_array(s, array, 0, 0);
     assert(third == EINVAL);
+    slice_free(s);
+}
+
+void test_slice_search() {
+    slice *s = malloc(sizeof(slice));
+    slice_default(s);
+    b_c characters[] = {{.id=1, .name="father gascoigne"},
+                        {.id=2, .name= "vicar amelia"},
+                        {.id=3, .name = "shadows of yharnam"}};
+    slice_from_primitive_array(s, characters, 3, sizeof(b_c));
+    s->elem_to_string = second_test_print_bc;
+    int id    = 1;
+    int first = slice_search(s, &id, 0, s->length, NULL);
+    assert(first == -1);
+    s->compare = first_test_compare_bc;
+    int second = slice_search(s, &id, 0, s->length, NULL);
+    assert(second == 0);
+    int id2   = 4;
+    int third = slice_search(s, &id2, 0, s->length, NULL);
+    assert(third == -1);
+    slice_sort(s, second_test_compare_bc);
+    b_c va     = {.id=3, .name="vicar amelia"};
+    int fourth = slice_search(s, &va, 0, s->length, second_test_compare_bc);
+    assert(fourth == 2);
     slice_free(s);
 }
 
@@ -547,4 +572,5 @@ void test_slice() {
     test_slice_sort();
     test_slice_to_ptr_array();
     test_slice_to_primitive_array();
+    test_slice_search();
 }
