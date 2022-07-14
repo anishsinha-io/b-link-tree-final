@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <sys/stat.h>
 
 #include "common.h"
@@ -12,6 +13,7 @@
 
 #define TEST_MIN_ORDER 2
 #define PROD_MIN_ORDER 300
+#define _STDC_LIMIT_MACROS
 
 #define INDEX_PATH "/Users/anishsinha/Home/cprojects/project-final/index/index.bin"
 
