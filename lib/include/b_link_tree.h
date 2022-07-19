@@ -40,14 +40,13 @@ int read_header(header *h);
 int read_node(node *n, int loc);
 int write_node(int loc, node *n);
 int scannode(int key, node *n);
+int insert(int v, int w);
 slice *node_keys_to_slice(node *n);
 slice *node_children_to_slice(node *n);
-
 off_t get_offset(int loc);
-
 node *create_node(int loc);
-
 split *split_node(int v, int w, node *A);
+string *node_to_string(const void *n);
 
 #endif
 

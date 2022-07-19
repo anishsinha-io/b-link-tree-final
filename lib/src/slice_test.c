@@ -57,11 +57,8 @@ void test_slice_init() {
 void test_slice_resize() {
     slice *s = malloc(sizeof(slice));
     slice_default(s);
-    int first = slice_resize(s, 5);
-    assert(first == EINVAL);
-    assert(s->capacity == 10);
-    int second = slice_resize(s, 15);
-    assert(second == 0);
+    int first = slice_resize(s, 15);
+    assert(first == 0);
     assert(s->capacity == 15);
     slice_free(s);
 }

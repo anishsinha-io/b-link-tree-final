@@ -68,7 +68,8 @@ int slice_free(slice *s) {
 ** resize slice object.
 */
 int slice_resize(slice *s, int capacity) {
-    if (!s || capacity == s->length || capacity < 10) return EINVAL;
+    // if (!s || capacity == s->length || capacity < 10) return EINVAL;
+    if (!s) return EINVAL;
     s->keys     = realloc(s->keys, sizeof(void *) * capacity);
     s->capacity = capacity;
     return 0;
@@ -101,6 +102,8 @@ int slice_insert(slice *s, void *key) {
 int slice_append(slice *s, void *key) {
     if (!s || !key || (s->validator && !s->validator(key))) return EINVAL;
     slice_autoresize(s);
+    if (*(int *) key == 37) printf("here: %d\n", s->capacity);
+
     s->keys[s->length++] = key;
     return 0;
 }
@@ -195,6 +198,11 @@ int slice_from_ptr_array(slice *s, void *keys, int num_keys) {
 int slice_from_primitive_array(slice *s, void *keys, int num_keys, size_t key_size) {
     if (!s || !keys || num_keys < 1) return EINVAL;
     slice_default(s);
+    if (num_keys == 0) {
+        printf("here\n");
+        slice_resize(s, 10);
+        return 0;
+    }
     slice_resize(s, (int) ((double) num_keys * 1.5));
     for (int i = 0; i < num_keys; i++) {
         void *key = malloc(key_size);

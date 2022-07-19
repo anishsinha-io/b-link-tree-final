@@ -289,9 +289,10 @@ stack *create_ancestor_stack() {
 */
 static int move_right(int v, node *A) {
     if (!A) return EINVAL;
-    int t;
-    while ((t = scannode(v, A)) == A->link_ptr) {
+    int t = scannode(v, A);
+    while (t == A->link_ptr && A->link_ptr != -1) {
         read_node(A, t);
+        t = scannode(v, A);
     }
     return 0;
 }
@@ -320,7 +321,7 @@ static int insert_safe(int v, int w, node *n) {
     slice *keys      = node_keys_to_slice(n);
     slice *children  = node_children_to_slice(n);
     int   key_index  = slice_find_index(keys, &v, NULL);
-    int   data_index = slice_find_index(keys, &w, NULL);
+    int   data_index = slice_find_index(children, &w, NULL);
     slice_insert_index(keys, &v, key_index);
     slice_insert_index(children, &w, data_index);
     n->high_key = *(int *) keys->keys[keys->length - 1];
@@ -336,21 +337,21 @@ static int doinsertion(int current, int v, int w, node *A, stack *ancestor_stack
         write_node(A->loc, A);
         return 0;
     } else {
-        split *pages = split_node(v, w, A);
-        int   y      = A->high_key;
-        write_node(pages->B->loc, pages->B);
-        write_node(current, A);
-        if (pages->new_root) {
-
-        }
-        int old_node = current;
-        v       = y;
-        w       = pages->B->loc;
-        current = *(int *) stack_pop(ancestor_stack);
+        // split *pages = split_node(v, w, A);
+        // int   y      = A->high_key;
+        // write_node(pages->B->loc, pages->B);
+        // write_node(current, A);
+        // if (pages->new_root) {
+        //
+        // }
+        // int old_node = current;
+        // v       = y;
+        // w       = pages->B->loc;
+        // current = *(int *) stack_pop(ancestor_stack);
         // lock current
-        read_node(A, current);
-        move_right(v, A);
-        return doinsertion(current, v, w, A, ancestor_stack);
+        // read_node(A, current);
+        // move_right(v, A);
+        // return doinsertion(current, v, w, A, ancestor_stack);
         // unlock old_node
     }
 }
@@ -364,20 +365,24 @@ int insert(int v, int w) {
     header h;
     read_header(&h);
     int current = h.root_loc;
-    // node A;
-    // read_node(&A, current);
-    // while (!A.leaf) {
-    //     int t = current;
-    //     current = scannode(v, &A);
-    //     if (current != A.link_ptr) stack_push(ancestor_stack, &t);
-    //     read_node(&A, current);
-    // }
-    // read_node(&A, current);
-    // move_right(v, &A);
-    // int exists = check_key_exists(v, &A);
-    // if (exists != -1) {
-    //     println(str("unable to insert: key already exists in tree!"));
-    //     return EINVAL;
-    // }
-    // return doinsertion(current, v, w, &A, ancestor_stack);
+    printf("%d\n", current);
+    node A;
+    read_node(&A, current);
+    println(node_to_string(&A));
+    while (!A.leaf) {
+        int t = current;
+        current = scannode(v, &A);
+        if (current != A.link_ptr) stack_push(ancestor_stack, &t);
+        read_node(&A, current);
+    }
+    read_node(&A, current);
+    println(node_to_string(&A));
+    move_right(v, &A);
+    println(node_to_string(&A));
+    int exists = check_key_exists(v, &A);
+    if (exists != -1) {
+        println(str("unable to insert: key already exists in tree!"));
+        return EINVAL;
+    }
+    return doinsertion(current, v, w, &A, ancestor_stack);
 }

@@ -108,6 +108,16 @@ void test_split_node() {
     read_node(&root, 0);
     split *test_split = split_node(5, 50, &root);
     assert(test_split->new_root != NULL);
+    // println(node_to_string(test_split->A));
+    // println(node_to_string(test_split->B));
+    // println(node_to_string(test_split->new_root));
+    destroy_index();
+}
+
+void test_insert() {
+    destroy_index();
+    format(TEST_MIN_ORDER, sizeof(node));
+    insert(1, 10);
     destroy_index();
 }
 
@@ -119,4 +129,5 @@ void test_b_link_tree() {
     test_write_node();
     test_scannode();
     test_split_node();
+    test_insert();
 }
