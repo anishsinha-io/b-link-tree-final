@@ -41,6 +41,42 @@ slice *node_children_to_slice(node *n) {
     return s;
 }
 
+string *node_to_string(const void *n) {
+    string *out = str("node [");
+    append(out, "\n\tleaf=", str_str);
+    append(out, ((node *) n)->leaf ? "true" : "false", str_str);
+    append(out, "\n\torder=", str_str);
+    append(out, &((node *) n)->order, str_int);
+    append(out, "\n\tnum_keys=", str_str);
+    append(out, &((node *) n)->num_keys, str_int);
+    append(out, "\n\thigh_key=", str_str);
+    append(out, &((node *) n)->high_key, str_int);
+    append(out, "\n\tlink_ptr=", str_str);
+    append(out, &((node *) n)->link_ptr, str_int);
+    append(out, "\n\tloc=", str_str);
+    append(out, &((node *) n)->loc, str_int);
+    append(out, "\n\tkeys=", str_str);
+    append(out, slice_to_string(node_keys_to_slice((node *) n), NULL), str_string);
+    append(out, "\tchildren=", str_str);
+    append(out, slice_to_string(node_children_to_slice((node *) n), NULL), str_string);
+    append(out, "]\n", str_str);
+    return out;
+}
+
+string *header_to_string(const void *h) {
+    string *out = str("header [");
+    append(out, "\n\tnode_count=", str_str);
+    append(out, &((header *) h)->node_count, str_int);
+    append(out, "\n\troot_loc=", str_str);
+    append(out, &((header *) h)->root_loc, str_int);
+    append(out, "\n\torder=", str_str);
+    append(out, &((header *) h)->order, str_int);
+    append(out, "\n\tnode_size=", str_str);
+    append(out, &((header *) h)->node_size, str_unsigned_long);
+    append(out, "\n]\n", str_str);
+    return out;
+}
+
 /*
 ** This function is used to create a node. A node is initialized with a `loc` (location) which is a node's logical
 ** position on the disk file where it resides. Every node is automatically initialized as a leaf, with zero keys, a high
@@ -136,7 +172,6 @@ int write_node(int loc, node *n) {
     header h;
     read_header(&h);
     write_buffer(INDEX_PATH, n, sizeof(*n), get_offset(loc));
-    h.node_count++;
     return write_header(&h);
 }
 
@@ -166,6 +201,13 @@ static split *create_split(node *A, node *B, node *new_root) {
     return s;
 }
 
+int increment_node_count(header *h) {
+    if (!h) return EINVAL;
+    h->node_count++;
+    write_header(h);
+    return 0;
+}
+
 /*
 ** This function splits a full node into two nodes. The process is as follows:
 **
@@ -184,11 +226,11 @@ static split *create_split(node *A, node *B, node *new_root) {
 **    into the root.
 ** 8. Return A, B, and root.
 */
-split *split_node(int v, int w, node *n) {
+split *split_node(int v, int w, node *A) {
     header h;
     read_header(&h);
-    slice *keys     = node_keys_to_slice(n);
-    slice *children = node_children_to_slice(n);
+    slice *keys     = node_keys_to_slice(A);
+    slice *children = node_children_to_slice(A);
     int   index     = slice_find_index(keys, &v, NULL);
     slice_insert_index(keys, &v, index);
     slice_insert_index(children, &w, index);
@@ -196,38 +238,39 @@ split *split_node(int v, int w, node *n) {
     slice *second_half_keys     = subslice(keys, keys->length / 2 + 1, keys->length);
     slice *first_half_children  = subslice(children, 0, children->length / 2 + 1);
     slice *second_half_children = subslice(children, children->length / 2 + 1, children->length);
-    slice_to_primitive_array(first_half_keys, n->keys, first_half_keys->length, sizeof(int));
-    slice_to_primitive_array(first_half_children, n->children, first_half_children->length, sizeof(int));
-    node *B = create_node(h.node_count);
-    B->leaf = n->leaf;
+    A->num_keys = first_half_keys->length;
+    slice_to_primitive_array(first_half_keys, A->keys, first_half_keys->length, sizeof(int));
+    slice_to_primitive_array(first_half_children, A->children, first_half_children->length, sizeof(int));
+    increment_node_count(&h);
+    node *B = create_node(h.node_count - 1);
+    B->num_keys = second_half_keys->length;
     slice_to_primitive_array(second_half_keys, B->keys, second_half_keys->length, sizeof(int));
     slice_to_primitive_array(second_half_children, B->children, second_half_children->length, sizeof(int));
-    n->num_keys = first_half_keys->length;
-    B->num_keys = second_half_keys->length;
-    B->link_ptr = n->link_ptr;
-    n->link_ptr = B->loc;
-    node *new_root = (h.root_loc == n->loc) ? create_node(h.node_count + 1) : NULL;
-    if (new_root) {
-        new_root->num_keys       = 1;
-        new_root->leaf           = false;
-        slice *left_keys         = node_keys_to_slice(n);
-        slice *new_root_keys     = node_keys_to_slice(new_root);
-        slice *new_root_children = node_children_to_slice(new_root);
-        if (n->leaf) {
-            void *high_key = slice_get_index(left_keys, left_keys->length - 1);
-            slice_append(new_root_keys, high_key);
+    B->link_ptr = A->link_ptr;
+    A->link_ptr = B->loc;
+    A->high_key = *(int *) first_half_keys->keys[keys->length / 2];
+    node *new_root = NULL;
+    if (A->loc == h.root_loc) {
+        increment_node_count(&h);
+        new_root = create_node(h.node_count - 1);
+        if (A->leaf) {
+            void *key = slice_get_index(first_half_keys, (first_half_keys->length - 1));
+            new_root->keys[0] = *(int *) key;
+            new_root->num_keys++;
         } else {
-            void *high_key = slice_delete_index(left_keys, left_keys->length - 1);
-            slice_append(new_root_keys, high_key);
+            void *key = slice_delete_index(first_half_keys, (first_half_keys->length - 1));
+            new_root->keys[0] = *(int *) key;
+            new_root->num_keys++;
         }
-        slice_append(new_root_children, &n->loc);
+        new_root->leaf = false;
+        slice *new_root_children = malloc(sizeof(slice));
+        slice_default(new_root_children);
+        slice_append(new_root_children, &A->loc);
         slice_append(new_root_children, &B->loc);
-        slice_to_primitive_array(new_root_keys, new_root->keys, new_root_keys->length, sizeof(int));
         slice_to_primitive_array(new_root_children, new_root->children, new_root_children->length, sizeof(int));
-        h.root_loc   = new_root->loc;
-        h.node_count = new_root->loc + 1;
+        slice_free(new_root_children);
     }
-    return create_split(n, B, new_root);
+    return create_split(A, B, new_root);
 }
 
 /*
@@ -320,21 +363,21 @@ int insert(int v, int w) {
     stack  *ancestor_stack = create_ancestor_stack();
     header h;
     read_header(&h);
-    int  current = h.root_loc;
-    node A;
-    read_node(&A, current);
-    while (!A.leaf) {
-        int t = current;
-        current = scannode(v, &A);
-        if (current != A.link_ptr) stack_push(ancestor_stack, &t);
-        read_node(&A, current);
-    }
-    read_node(&A, current);
-    move_right(v, &A);
-    int exists = check_key_exists(v, &A);
-    if (exists != -1) {
-        println(str("unable to insert: key already exists in tree!"));
-        return EINVAL;
-    }
-    return doinsertion(current, v, w, &A, ancestor_stack);
+    int current = h.root_loc;
+    // node A;
+    // read_node(&A, current);
+    // while (!A.leaf) {
+    //     int t = current;
+    //     current = scannode(v, &A);
+    //     if (current != A.link_ptr) stack_push(ancestor_stack, &t);
+    //     read_node(&A, current);
+    // }
+    // read_node(&A, current);
+    // move_right(v, &A);
+    // int exists = check_key_exists(v, &A);
+    // if (exists != -1) {
+    //     println(str("unable to insert: key already exists in tree!"));
+    //     return EINVAL;
+    // }
+    // return doinsertion(current, v, w, &A, ancestor_stack);
 }

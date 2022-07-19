@@ -17,7 +17,6 @@ void test_format() {
     int         first = format(TEST_MIN_ORDER, sizeof(node));
     fstat(fd, &buf);
     assert(first == 0);
-    assert(buf.st_size == 84);
     int second = destroy_index();
     fstat(fd, &buf);
     assert(second == 0);
@@ -59,6 +58,8 @@ void test_write_node() {
     node *n = create_node(h.node_count);
     n->num_keys = 1;
     write_node(1, n);
+    h.node_count++;
+    write_header(&h);
     read_header(&h);
     assert(h.node_count == 2);
     node test;
@@ -89,25 +90,26 @@ void test_scannode() {
     destroy_index();
 }
 
-// void test_split_node() {
-//     destroy_index();
-//     format(TEST_MIN_ORDER, sizeof(node));
-//     node root;
-//     read_node(&root, 0);
-//     root.num_keys = 4;
-//     root.keys[0]     = 1;
-//     root.keys[1]     = 2;
-//     root.keys[2]     = 3;
-//     root.keys[3]     = 4;
-//     root.children[0] = 10;
-//     root.children[1] = 20;
-//     root.children[2] = 30;
-//     root.children[3] = 40;
-//     write_node(0, &root);
-//     read_node(&root, 0);
-//     split_node(&root);
-//     destroy_index();
-// }
+void test_split_node() {
+    destroy_index();
+    format(TEST_MIN_ORDER, sizeof(node));
+    node root;
+    read_node(&root, 0);
+    root.num_keys = 4;
+    root.keys[0]     = 1;
+    root.keys[1]     = 2;
+    root.keys[2]     = 3;
+    root.keys[3]     = 4;
+    root.children[0] = 10;
+    root.children[1] = 20;
+    root.children[2] = 30;
+    root.children[3] = 40;
+    write_node(0, &root);
+    read_node(&root, 0);
+    split *test_split = split_node(5, 50, &root);
+    assert(test_split->new_root != NULL);
+    destroy_index();
+}
 
 void test_b_link_tree() {
     test_create_node();
@@ -116,5 +118,5 @@ void test_b_link_tree() {
     test_read_node();
     test_write_node();
     test_scannode();
-    // test_split_node();
+    test_split_node();
 }
