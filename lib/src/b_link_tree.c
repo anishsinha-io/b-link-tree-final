@@ -182,7 +182,7 @@ int write_node(int loc, node *n) {
 int scannode(int key, node *n) {
     slice *keys = node_keys_to_slice(n);
     int   index = slice_find_index(keys, &key, NULL);
-    if (index == keys->length) {
+    if (index == keys->length && n->link_ptr != -1) {
         slice_free(keys);
         return n->link_ptr;
     }
@@ -249,6 +249,7 @@ split *split_node(int v, int w, node *A) {
     B->link_ptr = A->link_ptr;
     A->link_ptr = B->loc;
     A->high_key = *(int *) first_half_keys->keys[keys->length / 2];
+    B->high_key = *(int *) second_half_keys->keys[second_half_keys->length - 1];
     node *new_root = NULL;
     if (A->loc == h.root_loc) {
         increment_node_count(&h);
@@ -262,13 +263,16 @@ split *split_node(int v, int w, node *A) {
             new_root->keys[0] = *(int *) key;
             new_root->num_keys++;
         }
-        new_root->leaf = false;
+        new_root->leaf     = false;
+        new_root->high_key = new_root->keys[0];
         slice *new_root_children = malloc(sizeof(slice));
         slice_default(new_root_children);
         slice_append(new_root_children, &A->loc);
         slice_append(new_root_children, &B->loc);
         slice_to_primitive_array(new_root_children, new_root->children, new_root_children->length, sizeof(int));
         slice_free(new_root_children);
+        h.root_loc = new_root->loc;
+        write_header(&h);
     }
     return create_split(A, B, new_root);
 }
@@ -325,6 +329,9 @@ static int insert_safe(int v, int w, node *n) {
     slice_insert_index(keys, &v, key_index);
     slice_insert_index(children, &w, data_index);
     n->high_key = *(int *) keys->keys[keys->length - 1];
+    n->num_keys++;
+    slice_to_primitive_array(keys, n->keys, keys->length, sizeof(int));
+    slice_to_primitive_array(children, n->children, children->length, sizeof(int));
     return 0;
 }
 
@@ -337,21 +344,24 @@ static int doinsertion(int current, int v, int w, node *A, stack *ancestor_stack
         write_node(A->loc, A);
         return 0;
     } else {
-        // split *pages = split_node(v, w, A);
-        // int   y      = A->high_key;
-        // write_node(pages->B->loc, pages->B);
-        // write_node(current, A);
-        // if (pages->new_root) {
-        //
-        // }
-        // int old_node = current;
-        // v       = y;
-        // w       = pages->B->loc;
-        // current = *(int *) stack_pop(ancestor_stack);
+        split *pages = split_node(v, w, A);
+        int   y      = A->high_key;
+        node  test;
+        read_node(&test, 0);
+        write_node(pages->B->loc, pages->B);
+        write_node(current, A);
+        if (pages->new_root) {
+            write_node(pages->new_root->loc, pages->new_root);
+            return 0;
+        }
+        int old_node = current;
+        v       = y;
+        w       = pages->B->loc;
+        current = *(int *) stack_pop(ancestor_stack);
         // lock current
-        // read_node(A, current);
-        // move_right(v, A);
-        // return doinsertion(current, v, w, A, ancestor_stack);
+        read_node(A, current);
+        move_right(v, A);
+        return doinsertion(current, v, w, A, ancestor_stack);
         // unlock old_node
     }
 }
@@ -364,21 +374,22 @@ int insert(int v, int w) {
     stack  *ancestor_stack = create_ancestor_stack();
     header h;
     read_header(&h);
-    int current = h.root_loc;
-    printf("%d\n", current);
+    int  current = h.root_loc;
     node A;
     read_node(&A, current);
-    println(node_to_string(&A));
-    while (!A.leaf) {
+    while (!A.leaf && scannode(v, &A) != -1) {
+        if (v == 9) {
+            println(node_to_string(&A));
+            printf("here\n");
+            break;
+        }
         int t = current;
         current = scannode(v, &A);
         if (current != A.link_ptr) stack_push(ancestor_stack, &t);
         read_node(&A, current);
     }
     read_node(&A, current);
-    println(node_to_string(&A));
     move_right(v, &A);
-    println(node_to_string(&A));
     int exists = check_key_exists(v, &A);
     if (exists != -1) {
         println(str("unable to insert: key already exists in tree!"));

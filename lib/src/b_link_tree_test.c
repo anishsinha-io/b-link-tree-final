@@ -80,10 +80,7 @@ void test_scannode() {
     n.keys[2] = 3;
     write_node(0, &n);
     read_node(&n, 0);
-    int key1   = 4;
     int key2   = 2;
-    int index1 = scannode(key1, &n);
-    assert(index1 == n.link_ptr);
     int index2 = scannode(key2, &n);
     assert(index2 != n.link_ptr);
     assert(index2 == 1);
@@ -118,6 +115,44 @@ void test_insert() {
     destroy_index();
     format(TEST_MIN_ORDER, sizeof(node));
     insert(1, 10);
+    insert(2, 20);
+    insert(3, 30);
+    insert(4, 40);
+    insert(5, 50);
+    header h;
+    read_header(&h);
+    assert(h.root_loc == 2);
+    node root;
+    read_node(&root, h.root_loc);
+    // println(node_to_string(&root));
+    node first;
+    read_node(&first, root.children[0]);
+    // println(node_to_string(&first));
+    node second;
+    read_node(&second, first.link_ptr);
+    // println(node_to_string(&second));
+    insert(6, 60);
+    insert(7, 70);
+    read_node(&second, first.link_ptr);
+    // println(node_to_string(&second));
+    insert(8, 80);
+    read_node(&second, first.link_ptr);
+    read_node(&root, h.root_loc);
+    node third;
+    read_node(&third, second.link_ptr);
+
+    read_header(&h);
+    read_node(&root, h.root_loc);
+    println(node_to_string(&root));
+    read_node(&first, root.children[0]);
+    println(node_to_string(&first));
+    read_node(&second, first.link_ptr);
+    println(node_to_string(&second));
+    read_node(&third, second.link_ptr);
+    println(node_to_string(&third));
+    insert(9, 90);
+    // read_node(&third, second.link_ptr);
+    // println(node_to_string(&third));
     destroy_index();
 }
 

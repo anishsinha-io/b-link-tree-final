@@ -47,6 +47,7 @@ off_t get_offset(int loc);
 node *create_node(int loc);
 split *split_node(int v, int w, node *A);
 string *node_to_string(const void *n);
+string *header_to_string(const void *h);
 
 #endif
 
