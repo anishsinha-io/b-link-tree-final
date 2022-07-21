@@ -248,7 +248,7 @@ split *split_node(int v, int w, node *A) {
     slice_to_primitive_array(second_half_children, B->children, second_half_children->length, sizeof(int));
     B->link_ptr = A->link_ptr;
     A->link_ptr = B->loc;
-    B->leaf = A->leaf;
+    B->leaf     = A->leaf;
     A->high_key = *(int *) first_half_keys->keys[keys->length / 2];
     B->high_key = *(int *) second_half_keys->keys[second_half_keys->length - 1];
     node *new_root = NULL;
@@ -260,7 +260,10 @@ split *split_node(int v, int w, node *A) {
             new_root->keys[0] = *(int *) key;
             new_root->num_keys++;
         } else {
+            printf("HERE\n");
             void *key = slice_delete_index(first_half_keys, (first_half_keys->length - 1));
+            A->num_keys--;
+            slice_to_primitive_array(first_half_keys, A->keys, first_half_keys->length, sizeof(int));
             new_root->keys[0] = *(int *) key;
             new_root->num_keys++;
         }
