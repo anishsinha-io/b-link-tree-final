@@ -187,7 +187,11 @@ int scannode(int key, node *n) {
         return n->link_ptr;
     }
     slice_free(keys);
-    return index;
+    // if (key == 17) {
+    //     println(node_to_string(n));
+    //     printf("%d\n", n->children[index]);
+    // }
+    return n->children[index];
 }
 
 /*
@@ -233,7 +237,8 @@ split *split_node(int v, int w, node *A) {
     slice *children = node_children_to_slice(A);
     int   index     = slice_find_index(keys, &v, NULL);
     slice_insert_index(keys, &v, index);
-    slice_insert_index(children, &w, index);
+    if (index == A->num_keys) slice_append(children, &w);
+    else slice_insert_index(children, &w, index);
     slice *first_half_keys      = subslice(keys, 0, keys->length / 2 + 1);
     slice *second_half_keys     = subslice(keys, keys->length / 2 + 1, keys->length);
     slice *first_half_children  = subslice(children, 0, children->length / 2 + 1);
@@ -251,6 +256,21 @@ split *split_node(int v, int w, node *A) {
     B->leaf     = A->leaf;
     A->high_key = *(int *) first_half_keys->keys[keys->length / 2];
     B->high_key = *(int *) second_half_keys->keys[second_half_keys->length - 1];
+    if (!A->leaf) {
+        // println(slice_to_string(first_half_keys, NULL));
+        // println(slice_to_string(second_half_keys, NULL));
+        // println(slice_to_string(first_half_children, NULL));
+        // println(slice_to_string(second_half_children, NULL));
+        void *removed = slice_get_index(first_half_children, first_half_children->length - 1);
+        // println(slice_to_string(first_half_children, NULL));
+        slice_insert(second_half_children, removed);
+        slice_to_primitive_array(first_half_keys, A->keys, first_half_keys->length, sizeof(int));
+        slice_to_primitive_array(first_half_children, A->children, first_half_children->length, sizeof(int));
+        // A->num_keys--;
+        slice_to_primitive_array(second_half_keys, B->keys, second_half_keys->length, sizeof(int));
+        slice_to_primitive_array(second_half_children, B->children, second_half_children->length, sizeof(int));
+    }
+
     node *new_root = NULL;
     if (A->loc == h.root_loc) {
         increment_node_count(&h);
@@ -260,7 +280,6 @@ split *split_node(int v, int w, node *A) {
             new_root->keys[0] = *(int *) key;
             new_root->num_keys++;
         } else {
-            printf("HERE\n");
             void *key = slice_delete_index(first_half_keys, (first_half_keys->length - 1));
             A->num_keys--;
             slice_to_primitive_array(first_half_keys, A->keys, first_half_keys->length, sizeof(int));
@@ -278,6 +297,12 @@ split *split_node(int v, int w, node *A) {
         h.root_loc = new_root->loc;
         write_header(&h);
     }
+    // if (v == 15 && w == 6) {
+    //     println(str("here--------------------"));
+    //     println(node_to_string(A));
+    //     println(node_to_string(B));
+    //     println(str("here--------------------"));
+    // }
     return create_split(A, B, new_root);
 }
 
@@ -343,15 +368,25 @@ static int insert_safe(int v, int w, node *n) {
 ** This is the recursive procedure that inserts the value and information into the tree, updating nodes on its way up.
 */
 static int doinsertion(int current, int v, int w, node *A, stack *ancestor_stack) {
+    __attribute__((unused)) int t = v;
     if (is_safe(A)) {
         insert_safe(v, w, A);
         write_node(A->loc, A);
         return 0;
     } else {
+        if (current == 2 && v == 15 && w == 6) {
+            // println(str("here--------------------"));
+            // printf("%d\n", current);
+            // printf("%d\n", v);
+            // printf("%d\n", w);
+            // println(node_to_string(A));
+            // println(stack_to_string(ancestor_stack, key_to_string));
+            // println(node_to_string(pages->A));
+            // println(node_to_string(pages->B));
+            // println(str("here--------------------"));
+        }
         split *pages = split_node(v, w, A);
         int   y      = A->high_key;
-        node  test;
-        read_node(&test, 0);
         write_node(pages->B->loc, pages->B);
         write_node(current, A);
         if (pages->new_root) {
@@ -364,9 +399,15 @@ static int doinsertion(int current, int v, int w, node *A, stack *ancestor_stack
         current = *(int *) stack_pop(ancestor_stack);
         // lock current
         read_node(A, current);
+        // if (t == 17) {
+        //     println(str("here------------------------"));
+        //     println(node_to_string(A));
+        //     printf("%d\n", v);
+        //     printf("%d\n", w);
+        //     println(str("here------------------------"));
+        // }
         move_right(v, A);
         return doinsertion(current, v, w, A, ancestor_stack);
-        // unlock old_node
     }
 }
 
@@ -384,13 +425,22 @@ int insert(int v, int w) {
     while (!A.leaf && scannode(v, &A) != -1) {
         int t = current;
         current = scannode(v, &A);
-        if (current != A.link_ptr) stack_push(ancestor_stack, &t);
-        if (!A.leaf) current = A.children[current];
-        read_node(&A, A.children[current]);
+        if (current != A.link_ptr) {
+            stack_push(ancestor_stack, &t);
+        }
+        read_node(&A, current);
     }
     read_node(&A, current);
     move_right(v, &A);
     int exists = check_key_exists(v, &A);
+    // if (v == 17) {
+    //     println(node_to_string(&A));
+    //     printf("%d\n", current);
+    //     println(stack_to_string(ancestor_stack, key_to_string));
+    //     node test;
+    //     read_node(&test, 2);
+    //     println(node_to_string(&test));
+    // }
     if (exists != -1) {
         println(str("unable to insert: key already exists in tree!"));
         return EINVAL;

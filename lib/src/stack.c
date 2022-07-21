@@ -59,3 +59,16 @@ int stack_free(stack *s) {
     free(s);
     return 0;
 }
+
+string *stack_to_string(stack *s, to_string elem_to_string) {
+    if (!s || !elem_to_string) return str("");
+    frame  *itr = s->top;
+    string *out = str("stack [ ");
+    while (itr) {
+        append(out, elem_to_string(itr->data), str_string);
+        if (itr->next != NULL) append(out, ", ", str_str);
+        itr = itr->next;
+    }
+    append(out, " ]\n", str_str);
+    return out;
+}

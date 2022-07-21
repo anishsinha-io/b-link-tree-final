@@ -25,7 +25,8 @@ int stack_init(stack *s);
 int stack_push(stack *s, void *data);
 int stack_size(stack *s);
 int stack_free(stack *s);
-
 void *stack_pop(stack *s);
+
+string *stack_to_string(stack *s, to_string elem_to_string);
 
 #endif
