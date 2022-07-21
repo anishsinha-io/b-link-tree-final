@@ -140,8 +140,20 @@ void test_insert() {
     read_node(&root, h.root_loc);
     node third;
     read_node(&third, second.link_ptr);
-
     read_header(&h);
+    read_node(&root, h.root_loc);
+    // println(node_to_string(&root));
+    read_node(&first, root.children[0]);
+    // println(node_to_string(&first));
+    read_node(&second, first.link_ptr);
+    // println(node_to_string(&second));
+    read_node(&third, second.link_ptr);
+    // println(node_to_string(&third));
+    insert(9, 90);
+    insert(10, 100);
+    read_node(&third, second.link_ptr);
+    // println(node_to_string(&third));
+    insert(11, 110);
     read_node(&root, h.root_loc);
     println(node_to_string(&root));
     read_node(&first, root.children[0]);
@@ -150,9 +162,10 @@ void test_insert() {
     println(node_to_string(&second));
     read_node(&third, second.link_ptr);
     println(node_to_string(&third));
-    insert(9, 90);
-    // read_node(&third, second.link_ptr);
-    // println(node_to_string(&third));
+    node fourth;
+    insert(12, 120);
+    read_node(&fourth, third.link_ptr);
+    println(node_to_string(&fourth));
     destroy_index();
 }
 

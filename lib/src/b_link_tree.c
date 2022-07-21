@@ -248,6 +248,7 @@ split *split_node(int v, int w, node *A) {
     slice_to_primitive_array(second_half_children, B->children, second_half_children->length, sizeof(int));
     B->link_ptr = A->link_ptr;
     A->link_ptr = B->loc;
+    B->leaf = A->leaf;
     A->high_key = *(int *) first_half_keys->keys[keys->length / 2];
     B->high_key = *(int *) second_half_keys->keys[second_half_keys->length - 1];
     node *new_root = NULL;
@@ -378,15 +379,11 @@ int insert(int v, int w) {
     node A;
     read_node(&A, current);
     while (!A.leaf && scannode(v, &A) != -1) {
-        if (v == 9) {
-            println(node_to_string(&A));
-            printf("here\n");
-            break;
-        }
         int t = current;
         current = scannode(v, &A);
         if (current != A.link_ptr) stack_push(ancestor_stack, &t);
-        read_node(&A, current);
+        if (!A.leaf) current = A.children[current];
+        read_node(&A, A.children[current]);
     }
     read_node(&A, current);
     move_right(v, &A);
